@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowUpRight, CalendarDays, Globe, Mail, Menu, Moon, Sun, X, ExternalLink } from "lucide-react";
 import PixelSwap from "./components/PixelSwap";
@@ -8,6 +8,7 @@ import ShapeWaves from "./components/ShapeWaves";
 import WarpText from "./components/WarpText";
 import TargetCursor from "./components/TargetCursor";
 import Magnet from "./components/Magnet";
+import ActivityHeatmap, { type ActivityDay } from "./components/ui/activity-heatmap";
 
 function GitHubIcon() {
   return (
@@ -105,6 +106,16 @@ export default function Home() {
   const [activeProject, setActiveProject] = useState<number | null>(null);
   const [isLightMode, setIsLightMode] = useState(false);
   const [displayLightMode, setDisplayLightMode] = useState(false);
+  const [selectedGithubDate, setSelectedGithubDate] = useState<string | null>(null);
+  const [githubActivity, setGithubActivity] = useState<ActivityDay[]>([]);
+  const [githubActivityError, setGithubActivityError] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/github-activity")
+      .then(response => response.ok ? response.json() as Promise<ActivityDay[]> : Promise.reject())
+      .then(setGithubActivity)
+      .catch(() => setGithubActivityError(true));
+  }, []);
 
   const handleThemeChange = (nextLightMode: boolean) => {
     setIsLightMode(nextLightMode);
@@ -345,6 +356,7 @@ export default function Home() {
         html[data-theme="light"] .footer a { color: #292722; }
         html[data-theme="light"] .modal-close { color: #292722; border-color: #aaa79e; }
         html[data-theme="light"] .modal .tag { color: #45433d; background: #e8e6de; }
+        html[data-theme="light"] .activity-heatmap { --heat-surface: #f5f4ef; --heat-ink: #151515; }
         @media (max-width: 700px) {
           .theme-toggle { align-self: flex-start; }
         }
@@ -408,6 +420,23 @@ export default function Home() {
             </motion.article>
           ))}
         </div>
+      </section>
+
+      <section className="section container" id="github-activity">
+        <SectionTitle>github activity.</SectionTitle>
+        <p className="section-intro">A year of building, learning and shipping across my projects.</p>
+        {githubActivityError ? (
+          <p className="section-intro">GitHub activity is temporarily unavailable.</p>
+        ) : (
+          <ActivityHeatmap
+            className="activity-heatmap"
+            days={githubActivity}
+            label="GitHub activity in the last year"
+            period="the last year"
+            selectedDate={selectedGithubDate}
+            onSelectDate={setSelectedGithubDate}
+          />
+        )}
       </section>
 
       <section className="section container" id="skills">
